@@ -27,7 +27,9 @@ class Protocol:
 
     async def _recvline(self):
         buffer = self.inbuf
-        while (pos := buffer.find(b"\r\n")) == -1:
+        while True:
+            pos = buffer.find(b"\r\n")
+            if pos != -1: break
             buffer += await self.receiver()
         ret = buffer[:pos].decode()
         del buffer[:pos + 2]
