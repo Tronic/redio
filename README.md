@@ -22,16 +22,14 @@ somekey, anotherkey = await r.get("somekey").get("anotherkey")
 await r.set("number", 10).set("jsonkey", dict(foo=123, bar=[1, 2, 3])).get("jsonkey")
 b'{"foo": 123, "bar": [1, 2, 3]}'
 
-# Add .strdecode or .fulldecode to have all values decoded based on content
-# (Redis normally returns bytes only, and this module reverts back to no
-# autodecoding after each await)
-await r.get("number").get("jsonkey")
+# Redis normally stores bytes only. Add .strdecode or .fulldecode to have all
+# values decoded based on content (only effective until the next await).
+await r.get("number").get("jsonkey").fulldecode
 [10, {'foo': 123, 'bar': [1, 2, 3]}]
 
 # Dict interface to hash keys
 r.hmset_dict("hashkey", field1=bytes([255, 0, 255]), field2="text", field3=1.23)
-r.hgetall("hashkey")
-await r
+await r.hgetall("hashkey")
 {'field1': b'\xff\x00\xff', 'field2': b'text', 'field3': b'1.23'}
 
 # Decoding also applies to dict values. Note that dict keys are always decoded.
