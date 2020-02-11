@@ -9,7 +9,7 @@ from redio.exc import ProtocolError, RedisError
 
 
 class Connection(Protocol):
-    def __init__(self, url="redis://localhost/", *, ssl_context=None, connection_commands=[]):
+    def __init__(self, url="redis://localhost/", *, ssl_context=None):
         super().__init__()
         # Parse URL for settings
         url = urlparse(url if "//" in url else f"//{url}")
@@ -43,7 +43,7 @@ class Connection(Protocol):
             commands += (b"AUTH", url.encode())
         if "database" in options:
             commands += (b"SELECT", b"%d" % options["database"]),
-        self.connection_commands = [*commands, *connection_commands]
+        self.connection_commands = commands
         self.sock = None
 
     def __bool__(self):
