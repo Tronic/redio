@@ -57,3 +57,35 @@ def command_human(cmd: bytes, *args: bytes):
     if len(args) > 10:
         ret += f" ⋯ of {len(args)} args"
     return ret
+
+
+class ByteDecoder:
+    """Helpers for switching decoding modes (used in high level API)"""
+    def __init__(self):
+        self._bytedecode = None
+
+    def _decode(self, text):
+        """Decode text using the selected decoder"""
+        return decode(text, self._bytedecode) if self._bytedecode else text
+
+    @property
+    def fulldecode(self):
+        """Enable decoding of strings, numbers and json. Undecodable sequences
+        remain as bytes.
+
+        This setting resets after each await."""
+        return self.bytedecoder(bytedecode_full)
+
+    @property
+    def strdecode(self):
+        """Enable decoding of bytes into strs. Only UTF-8 bytes are decoded.
+
+        This setting resets after each await."""
+        return self.bytedecoder(bytedecode_str)
+
+    def bytedecoder(self, bytedecode):
+        """Set custom byte decoding function.
+
+        This setting resets after each await."""
+        self._bytedecode = bytedecode
+        return self

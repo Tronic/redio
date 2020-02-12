@@ -5,9 +5,9 @@ from functools import partial
 from redio import conv
 from redio.commands import CommandBase
 from redio.conn import ConnectInfo
-from redio.exc import RedisError
+from redio.exc import ProtocolError, RedisError
 from redio.protocol import Protocol
-
+from redio.pubsub import PubSub
 
 class Redis:
     """Redis connection pool."""
@@ -23,6 +23,10 @@ class Redis:
         """Get a Redis database connection."""
         return DB(self)
 
+    def pubsub(self, *channels) -> PubSub:
+        """Create a publish/subscribe receiver."""
+        return PubSub(self, *channels)
+
     def _borrow_connection(self) -> Protocol:
         return self.pool.pop() if self.pool else Protocol(self.conninfo)
 
@@ -31,13 +35,13 @@ class Redis:
             self.pool += connection,
 
 
-class DB(CommandBase):
+class DB(CommandBase, conv.ByteDecoder):
     """Redis database connection (high level API)."""
     def __init__(self, redis: Redis):
+        super().__init__()
         self.redis = redis
         self.protocol = redis._borrow_connection()
         self.commands = []
-        self.bytedecode = None
 
     def __del__(self):
         """Restore still usable connection to pool on garbage collect. We rely
@@ -64,28 +68,6 @@ class DB(CommandBase):
 
         Two or more responses are returned as a list."""
         return self._run().__await__()
-
-    @property
-    def fulldecode(self):
-        """Enable decoding of strings, numbers and json. Undecodable sequences
-        remain as bytes.
-
-        This setting resets after each await."""
-        return self.decode(conv.bytedecode_full)
-
-    @property
-    def strdecode(self):
-        """Enable decoding of bytes into strs. Only UTF-8 bytes are decoded.
-
-        This setting resets after each await."""
-        return self.decode(conv.bytedecode_str)
-
-    def decode(self, bytedecode):
-        """Set custom byte decoding function.
-
-        This setting resets after each await."""
-        self.bytedecode = bytedecode
-        return self
 
     async def _run(self):
         """Execute queued commands, equivalent to await self."""
@@ -120,9 +102,8 @@ class DB(CommandBase):
                     raise RedisError(f"Expected {h}, got {r}")
                 continue
             ret += h(r),
-        if self.bytedecode:
-            ret = conv.decode(ret, bytedecode=self.bytedecode)
-            self.bytedecode = None
+        ret = self._decode(ret)
+        self.bytedecoder(None)
         return ret if len(ret) != 1 else ret[0]
 
     def _command(self, *cmd, handler=None):

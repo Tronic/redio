@@ -11,6 +11,8 @@ This module is not ready for production use and all APIs are still likely to
 change. It works with my applications and performs roughly at the same speed
 as other Redis modules for Python.
 
+## High level API in normal mode
+
 ```python
 from redio import Redis
 
@@ -44,3 +46,39 @@ must obtain a separate connection by calling it, as in the examples.
 
 A connection may be stored in a variable and used for multiple commands that
 rely on each other, e.g. transactions
+
+
+## Pub/Sub channels
+
+```python
+redis = redio.Redis()
+
+async for message in redis.pubsub("foo"):
+    # ...
+```
+
+Additional channels may be subscribed by `subscribe` and `psubscribe` commands
+on the PubSub object, and zero or more initial channels may be specified while
+creating the object by calling `redis.pubsub()`.
+
+By default only messages are received. When subscribing multiple channels on the
+same PubSub receiver, it may be useful to receive channel names as well, enabled
+by the `.with_channel` modifier. As with the standard interface, all commands
+and modifiers can be chained or called separately, as they return `self`.
+
+```python
+pubsub = redis.pubsub().strdecode.with_channel
+pubsub.subscribe("foo", "bar")
+pubsub.psubscribe("chan*")
+
+async for channel, message in pubsub:
+    # ...
+```
+
+Instead of `async for ... in pubsub` you may equivalently `await pubsub`.
+
+Messages are published via normal mode:
+
+```python
+await redis().publish("channel", "message")
+```
