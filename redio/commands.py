@@ -48,7 +48,6 @@ class CommandBase(ABC):
 
     def append(self, key, arg2): return self._command(b'APPEND', key, arg2)
     def asking(self): return self._command(b'ASKING')
-    def auth(self, arg1): return self._command(b'AUTH', arg1)
     def bgrewriteaof(self): return self._command(b'BGREWRITEAOF')
     def bgsave(self, *args): return self._command(b'BGSAVE', *args)
     def bitcount(self, key, *args): return self._command(b'BITCOUNT', key, *args)
@@ -139,6 +138,7 @@ class CommandBase(ABC):
     def psetex(self, key, arg2, arg3): return self._command(b'PSETEX', key, arg2, arg3)
     def psync(self, arg1, arg2): return self._command(b'PSYNC', arg1, arg2)
     def pttl(self, key): return self._command(b'PTTL', key)
+    def publish(self, channel, message): return self._command(b'PUBLISH', channel, message)
     def randomkey(self): return self._command(b'RANDOMKEY')
     def readonly(self): return self._command(b'READONLY')
     def readwrite(self): return self._command(b'READWRITE')
@@ -159,7 +159,6 @@ class CommandBase(ABC):
     def script(self, arg1, *args): return self._command(b'SCRIPT', arg1, *args)
     def sdiff(self, key1, *args): return self._command(b'SDIFF', key1, *args)
     def sdiffstore(self, key1, key2, *args): return self._command(b'SDIFFSTORE', key1, key2, *args)
-    def select(self, arg1): return self._command(b'SELECT', arg1)
     def setbit(self, key, arg2, arg3): return self._command(b'SETBIT', key, arg2, arg3)
     def setex(self, key, arg2, arg3): return self._command(b'SETEX', key, arg2, arg3)
     def setnx(self, key, arg2): return self._command(b'SETNX', key, arg2)
