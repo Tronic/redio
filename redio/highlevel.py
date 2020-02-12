@@ -4,7 +4,7 @@ from functools import partial
 
 from redio import conv
 from redio.commands import CommandBase
-from redio.conn import prepare
+from redio.conn import ConnectInfo
 from redio.exc import RedisError
 from redio.protocol import Protocol
 
@@ -12,7 +12,7 @@ from redio.protocol import Protocol
 class Redis:
     """Redis connection pool."""
     def __init__(self, url="redis://localhost/", *, ssl_context=None, pool_max=100):
-        self.conninfo = prepare(
+        self.conninfo = ConnectInfo.from_url(
             url,
             ssl_context=ssl_context,
         )
