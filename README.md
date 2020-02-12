@@ -75,7 +75,7 @@ async for channel, message in pubsub:
     # ...
 ```
 
-Instead of `async for ... in pubsub` you may equivalently `await pubsub`.
+Instead of `async for` you may equivalently `await pubsub` to receive a single message.
 
 Messages are published via normal mode:
 
