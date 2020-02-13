@@ -26,7 +26,7 @@ A simple syntax for pipelining multiple commands with high performance:
 somekey, anotherkey = await redis().get("somekey").get("anotherkey")
 ```
 
-## Dict interface to hash keys
+### Dict interface to hash keys
 
 ```python
 await redis().hmset_dict(
