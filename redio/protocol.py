@@ -97,7 +97,7 @@ class Protocol:
         arg = int(arg)
         if t == ":": return arg
         if t == "$": return None if arg == -1 else await self._recvbulk(arg)
-        if t == "*": return [await self.receive() for _ in range(arg)]
+        if t == "*": return False if arg == -1 else [await self.receive() for _ in range(arg)]
         raise ProtocolError(f"Redis protocol out of sync (line begins with {t}).")
 
     async def _recvline(self):

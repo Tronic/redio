@@ -73,6 +73,7 @@ class DB(CommandBase, conv.ByteDecoder):
         """Execute queued commands, equivalent to await self."""
         if self.protocol.closed:
             await self.protocol.connect()
+            self._transaction_server = None
         try:
             if self.commands:
                 return await self._execute()
@@ -91,21 +92,43 @@ class DB(CommandBase, conv.ByteDecoder):
             handlers.append(handler)
             commands.append([conv.encode(a) for a in cmd])
         self.commands = []
+        if self._transaction_state is not None:
+            self.prevent_pooling  # TODO: There are cases where we can resume pooling
         res = await self.protocol.run(commands)
-        ret = []
-        for h, r in zip(handlers, res):
-            if h is None:
-                ret += r,
-                continue
-            if isinstance(h, str):
-                if r != h:
-                    raise RedisError(f"Expected {h}, got {r}")
-                continue
-            ret += h(r),
+        ret = _handle_response(handlers, res)
         ret = self._decode(ret)
         self.bytedecoder(None)
         return ret if len(ret) != 1 else ret[0]
 
     def _command(self, *cmd, handler=None):
-        self.commands.append((handler, cmd))
+        if isinstance(self._transaction_state, list):
+            self.commands.append(("QUEUED", cmd))
+            self._transaction_state.append(handler)
+        else:
+            self.commands.append((handler, cmd))
         return self
+
+def _handle_response(handlers, res):
+    """Run handlers, check for errors and unpack transaction results."""
+    ret = []
+    if len(handlers) != len(res):
+        raise Exception(f"BUG in redio: lists are different length:\n  handlers={handlers}\n  res={res}\n")
+    for h, r in zip(handlers, res):
+        if h is None:
+            ret += r,
+            continue
+        if isinstance(h, str):
+            if r != h:
+                raise ProtocolError(f"Expected {h}, got {r}")
+            continue
+        if isinstance(h, list):
+            # EXEC command (transaction result)
+            if r:
+                ret.append(_handle_response(h, r))
+            else:
+                ret.append(bool(h is not False))  # True if it was []
+            continue
+        if isinstance(h, Exception):
+            raise h
+        ret += h(r),
+    return ret

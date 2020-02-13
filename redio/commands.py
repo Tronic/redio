@@ -6,11 +6,58 @@ from redio.conv import list_to_dict
 class CommandBase(ABC):
     """High level API command handlers"""
 
+    def __init__(self):
+        super().__init__()
+        # Transaction state: None, "watch" or list of handlers (in multi)
+        self._transaction_state = None
+
     @abstractmethod
     def _command(self, *cmd, handler=None):
         """Queue a command tuple."""
 
-    # Manually crafted Redis command helpers
+    ## Transactions
+
+    def watch(self, key1, *keys):
+        """Marks the given keys to be watched for conditional execution of a transaction."""
+        if self._transaction_state not in (None, "watch"):
+            raise ValueError("WATCH inside MULTI is not allowed")
+        self._transaction_state = "watch"
+        return self._command(b'WATCH', key1, *keys, handler="OK")
+
+    def unwatch(self):
+        """Forget about all watched keys"""
+        if self._transaction_state not in (None, "watch"):
+            raise ValueError("UNWATCH inside MULTI is not allowed")
+        self._transaction_state = None
+        return self._command(b'UNWATCH', handler="OK")
+
+    def multi(self):
+        """Marks the start of a transaction block. Subsequent commands will be queued for atomic execution using EXEC."""
+        if self._transaction_state not in (None, "watch"):
+            raise ValueError("MULTI calls can not be nested")
+        ret = self._command(b'MULTI', handler="OK")
+        self._transaction_state = []  # This is used in self._command
+        return ret
+
+    def discard(self):
+        """Flushes all previously queued commands in a transaction and restores the connection state to normal.
+
+        If WATCH was used, DISCARD unwatches all keys watched by the connection."""
+        if self._transaction_state in (None, "watch"):
+            raise ValueError("DISCARD without MULTI")
+        self._transaction_state = None
+        return self._command(b'DISCARD', handler="OK")
+
+    def exec(self):
+        """Executes all previously queued commands in a transaction and restores the connection state to normal.
+
+        When using WATCH, EXEC will execute commands only if the watched keys were not modified, allowing for a check-and-set mechanism"""
+        if self._transaction_state in (None, "watch"):
+            raise ValueError("EXEC without MULTI")
+        handler_list, self._transaction_state = self._transaction_state, None
+        return self._command(b'EXEC', handler=handler_list)
+
+    ## Manually crafted Redis command helpers
 
     def ping(self, *args):
         """PING server and check for PONG response."""
@@ -40,11 +87,7 @@ class CommandBase(ABC):
         """PEXPIREAT/EXPIREAT: set key expiration deadline"""
         return self._command(b'PEXPIREAT', key, 1000 * time)
 
-    # Transactions
-    def multi(self): return self._command(b'MULTI', handler="OK")
-    def exec(self): return self._command(b'EXEC')
-
-    # Note: the rest are auto-generated and not all of them might make sense.
+    ## The rest are auto-generated and not all of them might make sense.
 
     def append(self, key, arg2): return self._command(b'APPEND', key, arg2)
     def asking(self): return self._command(b'ASKING')
@@ -68,14 +111,13 @@ class CommandBase(ABC):
     def decr(self, key): return self._command(b'DECR', key)
     def decrby(self, key, arg2): return self._command(b'DECRBY', key, arg2)
     def delete(self, key1, *args): return self._command(b'DEL', key1, *args)
-    def discard(self): return self._command(b'DISCARD')
     def dump(self, key): return self._command(b'DUMP', key)
     def echo(self, arg1): return self._command(b'ECHO', arg1)
     def eval(self, arg1, arg2, *args): return self._command(b'EVAL', arg1, arg2, *args)
     def evalsha(self, arg1, arg2, *args): return self._command(b'EVALSHA', arg1, arg2, *args)
     def exists(self, key1, *args): return self._command(b'EXISTS', key1, *args)
-    def flushall(self, *args): return self._command(b'FLUSHALL', *args)
-    def flushdb(self, *args): return self._command(b'FLUSHDB', *args)
+    def flushall(self, *args): return self._command(b'FLUSHALL', *args, handler="OK")
+    def flushdb(self, *args): return self._command(b'FLUSHDB', *args, handler="OK")
     def geoadd(self, key, arg2, arg3, arg4, *args): return self._command(b'GEOADD', key, arg2, arg3, arg4, *args)
     def geodist(self, key, arg2, arg3, *args): return self._command(b'GEODIST', key, arg2, arg3, *args)
     def geohash(self, key, *args): return self._command(b'GEOHASH', key, *args)
@@ -187,9 +229,7 @@ class CommandBase(ABC):
     def ttl(self, key): return self._command(b'TTL', key)
     def type(self, key): return self._command(b'TYPE', key)
     def unlink(self, key1, *args): return self._command(b'UNLINK', key1, *args)
-    def unwatch(self): return self._command(b'UNWATCH')
     def wait(self, arg1, arg2): return self._command(b'WAIT', arg1, arg2)
-    def watch(self, key1, *args): return self._command(b'WATCH', key1, *args)
     def xack(self, key, arg2, arg3, *args): return self._command(b'XACK', key, arg2, arg3, *args)
     def xadd(self, key, arg2, arg3, arg4, *args): return self._command(b'XADD', key, arg2, arg3, arg4, *args)
     def xclaim(self, key, arg2, arg3, arg4, arg5, *args): return self._command(b'XCLAIM', key, arg2, arg3, arg4, arg5, *args)

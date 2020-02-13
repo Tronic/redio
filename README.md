@@ -1,15 +1,12 @@
 # RedIO - Redis for Trio
 
-A Python module for using Redis database in async programs based on the Trio
-library.
+A Python module for using Redis database in async programs based on the Trio library.
 
 ```
 pip install git+https://github.com/Tronic/redio.git
 ```
 
-This module is not ready for production use and all APIs are still likely to
-change. It works with my applications and performs roughly at the same speed
-as other Redis modules for Python.
+This module is not ready for production use and all APIs are still likely to change. It works with my applications and performs roughly at the same speed as other Redis modules for Python.
 
 ## Normal mode (high level API)
 
@@ -24,6 +21,16 @@ A simple syntax for pipelining multiple commands with high performance:
 
 ```python
 somekey, anotherkey = await redis().get("somekey").get("anotherkey")
+```
+
+Most normal [Redis commands](https://redis.io/commands) are available this way and they can either be called in such sequence, or if more convenient:
+
+```
+db = redis()
+db.get("bar")
+db.set("bar", "value").expire("bar", 0.5)
+db.get("bar")
+old_bar, bar = await db
 ```
 
 ### Dict interface to hash keys
@@ -46,6 +53,34 @@ Instead of keyword arguments, a dictionary may also be passed.
   'field3': 1.23,
 }
 ```
+
+### Transactions (WATCH/MULTI/EXEC)
+
+```python
+redis = redio.Redis()
+db = redis()
+
+foo = await db.watch("foo").get("foo")
+
+# Do something with the value (e.g. switch capitalization)
+foo = (foo or b"Default Value").swapcase()
+
+# The following commands are in transaction
+db.multi()
+db.set("foo", foo)
+
+# Someone else (think another program) touches the watched key
+if random:
+    await redis().set("foo", b"Another Value")
+
+result = await db.exec()
+```
+
+If any of the watched keys are touched prior to execution, none of the commands after `multi` are run and the result is `False`.
+
+Otherwise all of the commands are run in sequence with no intervening commands from other users. `True` is returned if none of the commands had any output (as in this example), or otherwise a list of the command results is returned.
+
+Note: Redis has no rollback and it cannot abort an ongoing transaction once it has started. Instead all remaining commands are run and any exceptions are **returned** as part of the exec response rather than raised.
 
 
 ## Pub/Sub channels
@@ -85,8 +120,7 @@ await redis().publish("channel", "message")
 
 ## Bytes encoding and decoding
 
-Redis commands only take bytes and have no other data types. Any non-bytes
-arguments are automatically encoded (strings, numbers, json):
+Redis commands only take bytes and have no other data types. Any non-bytes arguments are automatically encoded (strings, numbers, json):
 
 ```python
 db = redis()
@@ -107,8 +141,7 @@ By default, the returned results are not decoded:
 ]
 ```
 
-Add `.strdecode` or `.autodecode` to have all values decoded. This setting
-affects the next `await` and then <strong>resets back to default</strong>.
+Add `.strdecode` or `.autodecode` to have all values decoded. This setting affects the next `await` and then **resets back to default.**
 
 ```python
 >>> await redis().get("binary").get("number").get("jsonkey").strdecode
@@ -119,8 +152,7 @@ affects the next `await` and then <strong>resets back to default</strong>.
 ]
 ```
 
-All values are decoded into `str` with invalid UTF-8 sequences replaced by
-Unicode surrogate values.
+All values are decoded into `str` with invalid UTF-8 sequences replaced by Unicode surrogate values.
 
 ```python
 >>> await redis().get("binary").get("number").get("jsonkey").autodecode
@@ -131,22 +163,15 @@ Unicode surrogate values.
 ]
 ```
 
-The autodecode mode tries to guess correct format based on content. This is
-mostly useful when you know that the data is only JSON or numbers. Arbitrary
-binary or string data might be accidentally decoded further than it should.
+The autodecode mode tries to guess correct format based on content. This is mostly useful when you know that the data is only JSON or numbers. Arbitrary binary or string data might be accidentally decoded further than it should.
 
-Keys such as field names and channel names are always decoded into `str` and
-the above modes only affect handling of values (content).
+Keys such as field names and channel names are always decoded into `str` and the above modes only affect handling of values (content).
 
 
 ## Async safety
 
-Notice that the `redis` object may be shared by multiple async workers but each
-must obtain a separate connection by calling it, as in the examples.
+Notice that the `redis` object may be shared by multiple async workers but each must obtain a separate connection by calling it, as in the examples.
 
-A connection may be stored in a variable and used for multiple commands that
-rely on each other, e.g. transactions. This module attempts to keep track of
-whether the connection is reusable and thus can be returned to connection pool.
+A connection may be stored in a variable and used for multiple commands that rely on each other, e.g. transactions. This module attempts to keep track of whether the connection is reusable and thus can be returned to connection pool.
 
-It is possible to use `.prevent_pooling` modifier on a DB object to prevent its
-connection being pooled after use.
+It is possible to use `.prevent_pooling` modifier on a DB object to prevent its connection being pooled after use.
