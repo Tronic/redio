@@ -184,4 +184,4 @@ There are no separate arguments for hostname, port number and such. Instead all 
 * `redis+tls://:password@my.cloud/2` - secure connection to a server with authentication, using database 2
 * `rediss://secure.cloud/` - an alias for TLS connection
 * `redis+unix:///var/run/redis.sock?database=2` - UNIX socket connection must use three slashes
-* `redis+unix+tls://hostname.on.certificate/tmp/redis.sock` - if for whatever reason you want to use TLS on localhost
+* `redis+unix+tls://hostname.on.certificate/tmp/redis.sock` - why'd you want TLS on unix socket?
