@@ -40,10 +40,11 @@ await redis().hmset_dict(
   "hashkey",
   field1=bytes([255, 0, 255]),
   field2="text",
-  field3=1.23)
+  field3=1.23,
+)
 ```
 
-Instead of keyword arguments, a dictionary may also be passed.
+Instead of keyword arguments, a `dict` may also be passed.
 
 ```python
 >>> await redis().hgetall("hashkey").autodecode
@@ -167,7 +168,6 @@ The autodecode mode tries to guess correct format based on content. This is most
 
 Keys such as field names and channel names are always decoded into `str` and the above modes only affect handling of values (content).
 
-
 ## Async safety
 
 Notice that the `redis` object may be shared by multiple async workers but each must obtain a separate connection by calling it, as in the examples.
@@ -175,3 +175,13 @@ Notice that the `redis` object may be shared by multiple async workers but each 
 A connection may be stored in a variable and used for multiple commands that rely on each other, e.g. transactions. This module attempts to keep track of whether the connection is reusable and thus can be returned to connection pool.
 
 It is possible to use `.prevent_pooling` modifier on a DB object to prevent its connection being pooled after use.
+
+## Connection URLs
+
+There are no separate arguments for hostname, port number and such. Instead all settings are encoded in an URL passed to Redis(). A format similar to other Redis modules is used. Some examples:
+
+* `redis://localhost/` - default setting (localhost:6379, database 0, no auth)
+* `redis+tls://:password@my.cloud/2` - secure connection to a server with authentication, using database 2
+* `rediss://secure.cloud/` - an alias for TLS connection
+* `redis+unix:///var/run/redis.sock?database=2` - UNIX socket connection must use three slashes
+* `redis+unix+tls://hostname.on.certificate/tmp/redis.sock` - if for whatever reason you want to use TLS on localhost
