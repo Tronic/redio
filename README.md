@@ -11,25 +11,20 @@ This module is not ready for production use and all APIs are still likely to
 change. It works with my applications and performs roughly at the same speed
 as other Redis modules for Python.
 
-## High level API in normal mode
+## Normal mode (high level API)
 
 ```python
 from redio import Redis
 
-# Connection pool
+# Initialise a connection pool
 redis = Redis("redis://localhost/")
+```
 
-# Pipelining of multiple commands
+A simple syntax for pipelining multiple commands with high performance:
+
+```python
 somekey, anotherkey = await redis().get("somekey").get("anotherkey")
-
-# Parameters are encoded automatically
-await redis().set("number", 10).set("jsonkey", dict(foo=123, bar=[1, 2, 3])).get("jsonkey")
-b'{"foo": 123, "bar": [1, 2, 3]}'
-
-# Redis normally stores bytes only. Add .strdecode or .fulldecode to have all
-# values decoded based on content (only effective until the next await).
-await redis().get("number").get("jsonkey").fulldecode
-[10, {'foo': 123, 'bar': [1, 2, 3]}]
+```
 
 # Dict interface to hash keys
 redis().hmset_dict("hashkey", field1=bytes([255, 0, 255]), field2="text", field3=1.23)
@@ -82,3 +77,59 @@ Messages are published via normal mode:
 ```python
 await redis().publish("channel", "message")
 ```
+
+## Bytes encoding and decoding
+
+Redis commands only take bytes and have no other data types. Any non-bytes
+arguments are automatically encoded (strings, numbers, json):
+
+```python
+db = redis()
+db.set("binary", b"\x80")
+db.set("number", 10)
+db.set("jsonkey", dict(foo=123, bar=[1, 2, 3]))
+await db
+```
+
+By default, the returned results are not decoded:
+
+```python
+>>> await db.get("binary").get("number").get("jsonkey")
+[
+  b"\x80",
+  b"10",
+  b'{"foo": 123, "bar": [1, 2, 3]}'
+]
+```
+
+Add `.strdecode` or `.fulldecode` to have all values decoded. This setting
+affects the next `await` and then resets back to default.
+
+```python
+>>> await redis().get("binary").get("number").get("jsonkey").strdecode
+[
+  '\udc80',
+  '10',
+  '{"foo": 123, "bar": [1, 2, 3]}',
+]
+```
+
+All values are decoded into `str` with invalid UTF-8 sequences replaced by
+Unicode surrogate values (the same handling that Python uses for filenames,
+i.e. errors="surrogateescape").
+
+```python
+>>> await redis().get("binary").get("number").get("jsonkey").autodecode
+[
+  b'\x80',
+  10,
+  {'foo': 123, 'bar': [1, 2, 3]},
+]
+```
+
+The autodecode mode tries to guess correct format based on content. This is
+mostly useful when you know that the data is only JSON or numbers. Arbirary
+binary or string data might be accidentally decoded further than it should.
+
+Keys such as field names and channel names are always decoded into `str` and
+the above modes only affect handling of values (content).

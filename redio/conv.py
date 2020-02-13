@@ -1,9 +1,9 @@
 import json
 
 def list_to_dict(l):
-    return {k.decode(): v for k, v in zip(l[::2], l[1::2])}
+    return {bytedecode_str(k): v for k, v in zip(l[::2], l[1::2])}
 
-def bytedecode_full(s):
+def bytedecode_auto(s):
     try:
         s = s.decode()
     except UnicodeDecodeError:
@@ -15,17 +15,12 @@ def bytedecode_full(s):
 
 
 def bytedecode_str(s):
-    try:
-        return s.decode()
-    except UnicodeDecodeError:
-        return s
+    return s.decode(errors="surrogateescape")
 
 
-bytedecode_none = bytes
-
-def decode(response, bytedecode=bytedecode_full):
+def decode(response, bytedecode):
     if isinstance(response, bytes):
-        response = bytedecode_full(response)
+        response = bytedecode(response)
     elif isinstance(response, list):
         for i in range(len(response)):
             response[i] = decode(response[i], bytedecode)
@@ -69,23 +64,20 @@ class ByteDecoder:
         return decode(text, self._bytedecode) if self._bytedecode else text
 
     @property
-    def fulldecode(self):
+    def autodecode(self):
         """Enable decoding of strings, numbers and json. Undecodable sequences
-        remain as bytes.
-
-        This setting resets after each await."""
-        return self.bytedecoder(bytedecode_full)
+        remain as bytes."""
+        return self.bytedecoder(bytedecode_auto)
 
     @property
     def strdecode(self):
-        """Enable decoding of bytes into strs. Only UTF-8 bytes are decoded.
+        """Enable decoding of bytes into strs.
 
-        This setting resets after each await."""
+        Produces Unicode surrogates \\uDC80...\\uDCFF for invalid UTF-8 bytes,
+        using the errors=\"surrogateescape\" encode/decode mode of Python."""
         return self.bytedecoder(bytedecode_str)
 
     def bytedecoder(self, bytedecode):
-        """Set custom byte decoding function.
-
-        This setting resets after each await."""
+        """Set custom byte decoding function."""
         self._bytedecode = bytedecode
         return self
