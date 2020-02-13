@@ -78,7 +78,7 @@ If any of the watched keys are touched prior to execution, none of the commands 
 
 Otherwise all of the commands are run in sequence with no intervening commands from other users. `True` is returned if none of the commands had any output (as in this example), or otherwise a list of the command results is returned.
 
-Note: Redis has no rollback and it cannot abort an ongoing transaction once it has started. Once the transaction is executed, all commands are attempted even if some of them fail.
+Note: Redis cannot abort and undo an ongoing transaction once it has started.
 
 ## Pub/Sub channels
 
