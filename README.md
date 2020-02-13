@@ -58,20 +58,17 @@ Instead of keyword arguments, a `dict` may also be passed.
 ### Transactions (WATCH/MULTI/EXEC)
 
 ```python
-redis = redio.Redis()
 db = redis()
 
-foo = await db.watch("foo").get("foo")
+# Start watching and then get the old value
+foo = await db.watch("foo").get("foo") or b"Default Value"
 
-# Do something with the value (e.g. switch capitalization)
-foo = (foo or b"Default Value").swapcase()
-
-# The following commands are in transaction
+# The transaction (e.g. invert capitalization of foo)
 db.multi()
-db.set("foo", foo)
+db.set("foo", foo.swapcase())
 
 # Someone else (think another program) touches the watched key
-if random:
+if maybe:
     await redis().set("foo", b"Another Value")
 
 result = await db.exec()
@@ -81,8 +78,7 @@ If any of the watched keys are touched prior to execution, none of the commands 
 
 Otherwise all of the commands are run in sequence with no intervening commands from other users. `True` is returned if none of the commands had any output (as in this example), or otherwise a list of the command results is returned.
 
-Note: Redis has no rollback and it cannot abort an ongoing transaction once it has started. Instead all remaining commands are run and any exceptions are **returned** as part of the exec response rather than raised.
-
+Note: Redis has no rollback and it cannot abort an ongoing transaction once it has started. Once the transaction is executed, all commands are attempted even if some of them fail.
 
 ## Pub/Sub channels
 
