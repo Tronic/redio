@@ -47,12 +47,6 @@ Instead of keyword arguments, a dictionary may also be passed.
 }
 ```
 
-Notice that the `redis` object may be shared by multiple async workers but each
-must obtain a separate connection by calling it, as in the examples.
-
-A connection may be stored in a variable and used for multiple commands that
-rely on each other, e.g. transactions
-
 
 ## Pub/Sub channels
 
@@ -144,3 +138,16 @@ binary or string data might be accidentally decoded further than it should.
 
 Keys such as field names and channel names are always decoded into `str` and
 the above modes only affect handling of values (content).
+
+
+## Async safety
+
+Notice that the `redis` object may be shared by multiple async workers but each
+must obtain a separate connection by calling it, as in the examples.
+
+A connection may be stored in a variable and used for multiple commands that
+rely on each other, e.g. transactions. This module attempts to keep track of
+whether the connection is reusable and thus can be returned to connection pool.
+
+It is possible to use `.prevent_pooling` modifier on a DB object to prevent its
+connection being pooled after use.
