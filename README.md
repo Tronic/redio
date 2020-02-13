@@ -181,7 +181,7 @@ It is possible to use `.prevent_pooling` modifier on a DB object to prevent its 
 There are no separate arguments for hostname, port number and such. Instead all settings are encoded in an URL passed to Redis(). A format similar to other Redis modules is used. Some examples:
 
 * `redis://localhost/` - default setting (localhost:6379, database 0, no auth)
-* `redis+tls://:password@my.cloud/2` - secure connection to a server with authentication, using database 2
-* `rediss://secure.cloud/` - an alias for TLS connection
+* `redis://:password@localhost/2` - password authentication, using database 2
+* `rediss://secure.cloud/` or `redis+tls://secure.cloud/` - both are the same: TLS enabled
 * `redis+unix:///var/run/redis.sock?database=2` - UNIX socket connection must use three slashes
 * `redis+unix+tls://hostname.on.certificate/tmp/redis.sock` - why'd you want TLS on unix socket?
