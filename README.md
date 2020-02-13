@@ -135,9 +135,11 @@ await db
 
 ### Response decoding
 
-Keys such as field names and channel names are always decoded into `str` and the decoding modes only affect handling of values (content). Many Redis protocol commands also give integer or other typed responses which are not affected by this.
+Keys such as field names and channel names are always decoded into `str` and the decoding modes only affect handling of values (content). Many Redis protocol commands also respond with typed integer, string or list responses which are not affected by this.
 
-By default, the returned results are not decoded:
+Three decoding modes are provided for raw byte values. By default, values are not decoded. The other modes are enabled by modifiers `.strdecode` and `.autodecode`, which affect **only** the next `await`. Pub/Sub mode does not reset its decoding settings, so they persist once initially set.
+
+#### Default (no decoding)
 
 ```python
 >>> await db.get("binary").get("number").get("jsonkey")
@@ -147,8 +149,6 @@ By default, the returned results are not decoded:
   b'{"foo": 123, "bar": [1, 2, 3]}'
 ]
 ```
-
-Add `.strdecode` or `.autodecode` to have all values decoded. This setting affects the next `await` and then **resets** back to default. Pub/Sub mode does not reset its decoding settings.
 
 #### .strdecode
 
