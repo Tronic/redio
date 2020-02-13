@@ -107,7 +107,7 @@ By default, the returned results are not decoded:
 ]
 ```
 
-Add `.strdecode` or `.fulldecode` to have all values decoded. This setting
+Add `.strdecode` or `.autodecode` to have all values decoded. This setting
 affects the next `await` and then resets back to default.
 
 ```python
