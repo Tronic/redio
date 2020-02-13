@@ -121,6 +121,8 @@ await redis().publish("channel", "message")
 
 ## Bytes encoding and decoding
 
+### Command encoding
+
 Redis commands only take bytes and have no other data types. Any non-bytes arguments are automatically encoded (strings, numbers, json):
 
 ```python
@@ -130,6 +132,10 @@ db.set("number", 10)
 db.set("jsonkey", dict(foo=123, bar=[1, 2, 3]))
 await db
 ```
+
+### Response decoding
+
+Keys such as field names and channel names are always decoded into `str` and the decoding modes only affect handling of values (content). Many Redis protocol commands also give integer or other typed responses.
 
 By default, the returned results are not decoded:
 
@@ -169,8 +175,6 @@ All values are decoded into `str` with invalid UTF-8 sequences replaced by Unico
 ```
 
 The autodecode mode tries to guess correct format based on content. This is mostly useful when you know that the data is only JSON or numbers. Arbitrary binary or string data might be accidentally decoded further than it should.
-
-Keys such as field names and channel names are always decoded into `str` and the above modes only affect handling of values (content).
 
 ## Async safety
 
