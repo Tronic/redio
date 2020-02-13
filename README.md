@@ -120,13 +120,12 @@ affects the next `await` and then <strong>resets back to default</strong>.
 ```
 
 All values are decoded into `str` with invalid UTF-8 sequences replaced by
-Unicode surrogate values (the same handling that Python uses for filenames,
-i.e. errors="surrogateescape").
+Unicode surrogate values.
 
 ```python
 >>> await redis().get("binary").get("number").get("jsonkey").autodecode
 [
-  b'\x80',
+  b"\x80\x00\xFF",
   10,
   {'foo': 123, 'bar': [1, 2, 3]},
 ]
