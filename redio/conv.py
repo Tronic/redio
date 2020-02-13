@@ -3,6 +3,9 @@ import json
 def list_to_dict(l):
     return {bytedecode_str(k): v for k, v in zip(l[::2], l[1::2])}
 
+def list_of_keys(l):
+    return [bytedecode_str(k) for k in l]
+
 def bytedecode_auto(s):
     try:
         s = s.decode()

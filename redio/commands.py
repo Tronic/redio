@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from redio.conv import list_to_dict
+from redio.conv import list_to_dict, list_of_keys
 
 
 class CommandBase(ABC):
@@ -67,17 +67,86 @@ class CommandBase(ABC):
         """SET a value for key."""
         return self._command(b'SET', key, val, *keyvals, handler="OK")
 
-    def hmset(self, key, arg2, arg3, *args): return self._command(b'HMSET', key, arg2, arg3, *args, handler="OK")
+    def keys(self, pattern="*"):
+        """Returns all keys matching pattern."""
+        return self._command(b'KEYS', pattern, handler=list_of_keys)
 
-    def hmset_dict(self, key, values=None, **keyval):
-        """HMSET with values from dict or keyword arguments."""
-        if values:
-            keyval = {**values, **keyval}
-        return self.hmset(key, *[a for kv in keyval.items() for a in kv])
+    ## Hash keys
+
+    def hset(self, key, dictionary=None, **keyval):
+        """Sets field in the hash stored at key to value. If key does not exist, a new key holding a hash is created. If field already exists in the hash, it is overwritten. Multiple fields may be set in the same command.
+
+        Python dict or keywords arguments define field names and values."""
+        if dictionary:
+            keyval = {**dictionary, **keyval}
+        args = [a for kv in keyval.items() for a in kv]
+        return self._command(b"HSET", key, *args)
 
     def hgetall(self, key):
-        """HGETALL that returns a dict object."""
+        """Returns all fields and values of the hash stored at key.
+
+        Python dict with str keys is returned."""
         return self._command(b'HGETALL', key, handler=list_to_dict)
+
+    def hdel(self, key, field, *fields):
+        """Removes the specified fields from the hash stored at key. Specified fields that do not exist within this hash are ignored. If key does not exist, it is treated as an empty hash and this command returns 0.
+
+        Return value: the number of fields that were removed from the hash, not including specified but non existing fields."""
+        return self._command(b'HDEL', key, field, *fields)
+
+    def hexists(self, key, field):
+        """Returns if field is an existing field in the hash stored at key."""
+        return self._command(b'HEXISTS', key, field, handler=bool)
+
+    def hget(self, key, field):
+        """Returns the value associated with field in the hash stored at key, or None.
+
+        If a list of field names is passed as field, a list of values is returned (HMGET)."""
+        if isinstance(field, (tuple, list)):
+            # FIXME: Empty list leads to Redis error
+            return self._command(b'HMGET', key, *field)
+        return self._command(b'HGET', key, field)
+
+    def hincrby(self, key, field, num):
+        """Increments the number stored at field in the hash stored at key by increment. If key does not exist, a new key holding a hash is created. If field does not exist the value is set to 0 before the operation is performed.
+
+        The range of values supported by HINCRBY is limited to 64 bit signed integers.
+
+        Return value: the value at field after the increment operation."""
+        return self._command(b'HINCRBY', key, field, num)
+
+    def hincrbyfloat(self, key, field, num):
+        """Increment the specified field of a hash stored at key, and representing a floating point number, by the specified increment. If the increment value is negative, the result is to have the hash field value decremented instead of incremented. If the field does not exist, it is set to 0 before performing the operation. An error is returned if one of the following conditions occur:
+
+        The field contains a value of the wrong type (not a string).
+        The current field content or the specified increment are not parsable as a double precision floating point number.
+
+        Return value: bytes: the value of field after the increment."""
+        return self._command(b'HINCRBYFLOAT', key, field, num)
+
+    def hkeys(self, key):
+        """Returns all field names in the hash stored at key."""
+        return self._command(b'HKEYS', key, handler=list_of_keys)
+
+    def hlen(self, key):
+        """Returns the number of fields contained in the hash stored at key."""
+        return self._command(b'HLEN', key)
+
+    def hsetnx(self, key, field, value, handler=bool):
+        """Sets field in the hash stored at key to value, only if field does not yet exist. If key does not exist, a new key holding a hash is created. If field already exists, this operation has no effect.
+
+        Return value: bool: whether the field was created and set."""
+        return self._command(b'HSETNX', key, field, value)
+
+    def hstrlen(self, key, field):
+        """Returns the string length of the value associated with field in the hash stored at key. If the key or the field do not exist, 0 is returned."""
+        return self._command(b'HSTRLEN', key, field)
+
+    def hvals(self, key):
+        """Returns all values in the hash stored at key."""
+        return self._command(b'HVALS', key)
+
+    ## Key expiration times
 
     def expire(self, key, seconds: float):
         """PEXPIRE/EXPIRE: set key expiration in seconds"""
@@ -86,6 +155,16 @@ class CommandBase(ABC):
     def expireat(self, key, time: float):
         """PEXPIREAT/EXPIREAT: set key expiration deadline"""
         return self._command(b'PEXPIREAT', key, 1000 * time)
+
+    def ttl(self, key):
+        """Return TTL of a key in seconds, with millisecond precision (float)."""
+        return self._command(b'PTTL', key, handler=lambda ms: .001 * ms)
+
+    ## Scanning (not very pythonic)
+    def scan(self, arg1, *args): return self._command(b'SCAN', arg1, *args)
+    def hscan(self, key, arg2, *args): return self._command(b'HSCAN', key, arg2, *args)
+    def zscan(self, key, arg2, *args): return self._command(b'ZSCAN', key, arg2, *args)
+    def sscan(self, key, arg2, *args): return self._command(b'SSCAN', key, arg2, *args)
 
     ## The rest are auto-generated and not all of them might make sense.
 
@@ -128,24 +207,10 @@ class CommandBase(ABC):
     def getbit(self, key, arg2): return self._command(b'GETBIT', key, arg2)
     def getrange(self, key, arg2, arg3): return self._command(b'GETRANGE', key, arg2, arg3)
     def getset(self, key, arg2): return self._command(b'GETSET', key, arg2)
-    def hdel(self, key, arg2, *args): return self._command(b'HDEL', key, arg2, *args)
-    def hexists(self, key, arg2): return self._command(b'HEXISTS', key, arg2)
-    def hget(self, key, arg2): return self._command(b'HGET', key, arg2)
-    def hincrby(self, key, arg2, arg3): return self._command(b'HINCRBY', key, arg2, arg3)
-    def hincrbyfloat(self, key, arg2, arg3): return self._command(b'HINCRBYFLOAT', key, arg2, arg3)
-    def hkeys(self, key): return self._command(b'HKEYS', key)
-    def hlen(self, key): return self._command(b'HLEN', key)
-    def hmget(self, key, arg2, *args): return self._command(b'HMGET', key, arg2, *args)
-    def hscan(self, key, arg2, *args): return self._command(b'HSCAN', key, arg2, *args)
-    def hset(self, key, arg2, arg3, *args): return self._command(b'HSET', key, arg2, arg3, *args)
-    def hsetnx(self, key, arg2, arg3): return self._command(b'HSETNX', key, arg2, arg3)
-    def hstrlen(self, key, arg2): return self._command(b'HSTRLEN', key, arg2)
-    def hvals(self, key): return self._command(b'HVALS', key)
     def incr(self, key): return self._command(b'INCR', key)
     def incrby(self, key, arg2): return self._command(b'INCRBY', key, arg2)
     def incrbyfloat(self, key, arg2): return self._command(b'INCRBYFLOAT', key, arg2)
     def info(self, *args): return self._command(b'INFO', *args)
-    def keys(self, arg1): return self._command(b'KEYS', arg1)
     def lastsave(self): return self._command(b'LASTSAVE')
     def latency(self, arg1, *args): return self._command(b'LATENCY', arg1, *args)
     def lindex(self, key, arg2): return self._command(b'LINDEX', key, arg2)
@@ -179,7 +244,6 @@ class CommandBase(ABC):
     def post(self, *args): return self._command(b'POST', *args)
     def psetex(self, key, arg2, arg3): return self._command(b'PSETEX', key, arg2, arg3)
     def psync(self, arg1, arg2): return self._command(b'PSYNC', arg1, arg2)
-    def pttl(self, key): return self._command(b'PTTL', key)
     def publish(self, channel, message): return self._command(b'PUBLISH', channel, message)
     def randomkey(self): return self._command(b'RANDOMKEY')
     def readonly(self): return self._command(b'READONLY')
@@ -196,7 +260,6 @@ class CommandBase(ABC):
     def rpushx(self, key, arg2, *args): return self._command(b'RPUSHX', key, arg2, *args)
     def sadd(self, key, arg2, *args): return self._command(b'SADD', key, arg2, *args)
     def save(self): return self._command(b'SAVE')
-    def scan(self, arg1, *args): return self._command(b'SCAN', arg1, *args)
     def scard(self, key): return self._command(b'SCARD', key)
     def script(self, arg1, *args): return self._command(b'SCRIPT', arg1, *args)
     def sdiff(self, key1, *args): return self._command(b'SDIFF', key1, *args)
@@ -217,7 +280,6 @@ class CommandBase(ABC):
     def spop(self, key, *args): return self._command(b'SPOP', key, *args)
     def srandmember(self, key, *args): return self._command(b'SRANDMEMBER', key, *args)
     def srem(self, key, arg2, *args): return self._command(b'SREM', key, arg2, *args)
-    def sscan(self, key, arg2, *args): return self._command(b'SSCAN', key, arg2, *args)
     def strlen(self, key): return self._command(b'STRLEN', key)
     def substr(self, key, arg2, arg3): return self._command(b'SUBSTR', key, arg2, arg3)
     def sunion(self, key1, *args): return self._command(b'SUNION', key1, *args)
@@ -226,7 +288,6 @@ class CommandBase(ABC):
     def sync(self): return self._command(b'SYNC')
     def time(self): return self._command(b'TIME')
     def touch(self, key, *args): return self._command(b'TOUCH', key, *args)
-    def ttl(self, key): return self._command(b'TTL', key)
     def type(self, key): return self._command(b'TYPE', key)
     def unlink(self, key1, *args): return self._command(b'UNLINK', key1, *args)
     def wait(self, arg1, arg2): return self._command(b'WAIT', arg1, arg2)
@@ -264,6 +325,5 @@ class CommandBase(ABC):
     def zrevrangebylex(self, key, arg2, arg3, *args): return self._command(b'ZREVRANGEBYLEX', key, arg2, arg3, *args)
     def zrevrangebyscore(self, key, arg2, arg3, *args): return self._command(b'ZREVRANGEBYSCORE', key, arg2, arg3, *args)
     def zrevrank(self, key, arg2): return self._command(b'ZREVRANK', key, arg2)
-    def zscan(self, key, arg2, *args): return self._command(b'ZSCAN', key, arg2, *args)
     def zscore(self, key, arg2): return self._command(b'ZSCORE', key, arg2)
     def zunionstore(self, arg1, arg2, arg3, *args): return self._command(b'ZUNIONSTORE', arg1, arg2, arg3, *args)

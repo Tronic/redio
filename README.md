@@ -33,10 +33,12 @@ db.get("bar")
 old_bar, bar = await db
 ```
 
-### Dict interface to hash keys
+### Hash keys
+
+Hash key API is based on dict and keyword arguments for fields:
 
 ```python
-await redis().hmset_dict(
+await redis().hset(
   "hashkey",
   field1=bytes([255, 0, 255]),
   field2="text",
@@ -44,7 +46,8 @@ await redis().hmset_dict(
 )
 ```
 
-Instead of keyword arguments, a `dict` may also be passed.
+Instead of keyword arguments, a `dict` may also be passed. Similarly, values
+returned by hgetall come as a dictionary:
 
 ```python
 >>> await redis().hgetall("hashkey").autodecode
