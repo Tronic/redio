@@ -152,7 +152,7 @@ Three decoding modes are provided for raw byte values. By default, values are no
 #### .strdecode
 
 ```python
->>> await redis().get("binary").get("number").get("jsonkey").strdecode
+>>> await db.get("binary").get("number").get("jsonkey").strdecode
 [
   '\udc80\x00\udcff',
   '10',
@@ -165,7 +165,7 @@ All values are decoded into `str` with invalid UTF-8 sequences replaced by Unico
 #### .autodecode
 
 ```python
->>> await redis().get("binary").get("number").get("jsonkey").autodecode
+>>> await db.get("binary").get("number").get("jsonkey").autodecode
 [
   b"\x80\x00\xFF",
   10,
