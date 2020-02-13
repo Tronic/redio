@@ -150,7 +150,7 @@ By default, the returned results are not decoded:
 
 Add `.strdecode` or `.autodecode` to have all values decoded. This setting affects the next `await` and then **resets** back to default. Pub/Sub mode does not reset its decoding settings.
 
-### .strdecode
+#### .strdecode
 
 ```python
 >>> await redis().get("binary").get("number").get("jsonkey").strdecode
@@ -163,7 +163,7 @@ Add `.strdecode` or `.autodecode` to have all values decoded. This setting affec
 
 All values are decoded into `str` with invalid UTF-8 sequences replaced by Unicode surrogate values.
 
-### .autodecode
+#### .autodecode
 
 ```python
 >>> await redis().get("binary").get("number").get("jsonkey").autodecode
