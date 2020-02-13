@@ -132,7 +132,7 @@ Unicode surrogate values.
 ```
 
 The autodecode mode tries to guess correct format based on content. This is
-mostly useful when you know that the data is only JSON or numbers. Arbirary
+mostly useful when you know that the data is only JSON or numbers. Arbitrary
 binary or string data might be accidentally decoded further than it should.
 
 Keys such as field names and channel names are always decoded into `str` and
