@@ -26,14 +26,25 @@ A simple syntax for pipelining multiple commands with high performance:
 somekey, anotherkey = await redis().get("somekey").get("anotherkey")
 ```
 
-# Dict interface to hash keys
-redis().hmset_dict("hashkey", field1=bytes([255, 0, 255]), field2="text", field3=1.23)
-await redis().hgetall("hashkey")
-{'field1': b'\xff\x00\xff', 'field2': b'text', 'field3': b'1.23'}
+## Dict interface to hash keys
 
-# Decoding also applies to dict values. Note that dict keys are always decoded.
-await redis().hgetall("hashkey").fulldecode
-{'field1': b'\xff\x00\xff', 'field2': 'text', 'field3': 1.23}
+```python
+await redis().hmset_dict(
+  "hashkey",
+  field1=bytes([255, 0, 255]),
+  field2="text",
+  field3=1.23)
+```
+
+Instead of keyword arguments, a dictionary may also be passed.
+
+```python
+>>> await redis().hgetall("hashkey").autodecode
+{
+  'field1': b'\xff\x00\xff',
+  'field2': 'text',
+  'field3': 1.23,
+}
 ```
 
 Notice that the `redis` object may be shared by multiple async workers but each
@@ -85,7 +96,7 @@ arguments are automatically encoded (strings, numbers, json):
 
 ```python
 db = redis()
-db.set("binary", b"\x80")
+db.set("binary", bytes([128, 0, 255]))
 db.set("number", 10)
 db.set("jsonkey", dict(foo=123, bar=[1, 2, 3]))
 await db
@@ -96,7 +107,7 @@ By default, the returned results are not decoded:
 ```python
 >>> await db.get("binary").get("number").get("jsonkey")
 [
-  b"\x80",
+  b"\x80\x00\xFF",
   b"10",
   b'{"foo": 123, "bar": [1, 2, 3]}'
 ]
@@ -108,7 +119,7 @@ affects the next `await` and then resets back to default.
 ```python
 >>> await redis().get("binary").get("number").get("jsonkey").strdecode
 [
-  '\udc80',
+  '\udc80\x00\udcff',
   '10',
   '{"foo": 123, "bar": [1, 2, 3]}',
 ]
