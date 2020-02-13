@@ -182,6 +182,6 @@ There are no separate arguments for hostname, port number and such. Instead all 
 
 * `redis://localhost/` - default setting (localhost:6379, database 0, no auth)
 * `redis://:password@localhost/2` - password authentication, using database 2
-* `rediss://secure.cloud/` or `redis+tls://secure.cloud/` - both are the same: TLS enabled
+* `rediss://secure.cloud/` or `redis+tls://secure.cloud/` - both are the same: secure connection
 * `redis+unix:///var/run/redis.sock?database=2` - UNIX socket connection must use three slashes
 * `redis+unix+tls://hostname.on.certificate/tmp/redis.sock` - why'd you want TLS on unix socket?
