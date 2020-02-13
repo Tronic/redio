@@ -108,7 +108,7 @@ By default, the returned results are not decoded:
 ```
 
 Add `.strdecode` or `.autodecode` to have all values decoded. This setting
-affects the next `await` and then resets back to default.
+affects the next `await` and then <strong>resets back to default</strong>.
 
 ```python
 >>> await redis().get("binary").get("number").get("jsonkey").strdecode
