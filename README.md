@@ -135,7 +135,7 @@ await db
 
 ### Response decoding
 
-Keys such as field names and channel names are always decoded into `str` and the decoding modes only affect handling of values (content). Many Redis protocol commands also give integer or other typed responses.
+Keys such as field names and channel names are always decoded into `str` and the decoding modes only affect handling of values (content). Many Redis protocol commands also give integer or other typed responses which are not affected by this.
 
 By default, the returned results are not decoded:
 
