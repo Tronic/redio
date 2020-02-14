@@ -11,10 +11,10 @@ This module is not ready for production use and all APIs are still likely to cha
 ## Normal mode (high level API)
 
 ```python
-from redio import Redis
+import redio
 
 # Initialise a connection pool
-redis = Redis("redis://localhost/")
+redis = redio.Redis("redis://localhost/")
 ```
 
 A simple syntax for pipelining multiple commands with high performance:
@@ -64,7 +64,7 @@ returned by hgetall come as a dictionary:
 db = redis()
 
 # Start watching and then get the old value
-foo = await db.watch("foo").get("foo") or b"Default Value"
+foo = await db.watch("foo").get("foo") or b"default VALUE"
 
 # The transaction (e.g. invert capitalization of foo)
 db.multi()
@@ -72,16 +72,16 @@ db.set("foo", foo.swapcase())
 
 # Someone else (think another program) touches the watched key
 if maybe:
-    await redis().set("foo", b"Another Value")
+    await redis().set("foo", b"ANOTHER value")
 
 result = await db.exec()
 ```
 
 If any of the watched keys are touched prior to execution, none of the commands after `multi` are run and the result is `False`.
 
-Otherwise all of the commands are run in sequence with no intervening commands from other users. `True` is returned if none of the commands had any output (as in this example), or otherwise a list of the command results is returned.
+Otherwise all of the commands are run in sequence with no intervening commands from other users. `True` or a list of commands' responses is returned (depending on whether there was any output, in this example there was not, thus a boolean is always returned).
 
-Note: Redis cannot abort and undo an ongoing transaction once it has started.
+Note: Redis cannot abort and undo an ongoing transaction once it has started. The server will attempt to execute all of the commands, even after errors.
 
 ## Pub/Sub channels
 
