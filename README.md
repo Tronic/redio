@@ -28,9 +28,9 @@ Most normal [Redis commands](https://redis.io/commands) are available this way a
 ```
 db = redis()
 db.get("bar")
-db.set("bar", "value").expire("bar", 0.5)
+db.set("bar", "value").expire("bar", 0.5)  # Automatically deleted after 500 ms
 db.get("bar")
-old_bar, bar = await db
+old_bar, expire, bar = await db
 ```
 
 ### Hash keys
