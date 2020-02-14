@@ -93,8 +93,20 @@ while True:
 
 ## Pub/Sub channels
 
+### Sending messages
+
+Messages are published via normal `publish` commands:
+
 ```python
-async for message in redis.pubsub("foo"):
+await redis().publish("channel", "message")
+```
+
+### Receiving messages
+
+Receiving connections can be created by calling `pubsub` on the connection pool:
+
+```python
+async for message in redis.pubsub("channel"):
     print(message)
 ```
 
@@ -117,12 +129,6 @@ async for channel, message in pubsub:
 ```
 
 Instead of `async for` you may equivalently `await pubsub` to receive a single message.
-
-Messages are published via normal mode:
-
-```python
-await redis().publish("channel", "message")
-```
 
 ## Bytes encoding and decoding
 
