@@ -94,10 +94,8 @@ while True:
 ## Pub/Sub channels
 
 ```python
-redis = redio.Redis()
-
 async for message in redis.pubsub("foo"):
-    # ...
+    print(message)
 ```
 
 Additional channels may be subscribed by `subscribe` and `psubscribe` commands
@@ -115,7 +113,7 @@ pubsub.subscribe("foo", "bar")
 pubsub.psubscribe("chan*")
 
 async for channel, message in pubsub:
-    # ...
+    print(message, "from", channel)
 ```
 
 Instead of `async for` you may equivalently `await pubsub` to receive a single message.
