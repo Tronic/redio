@@ -25,7 +25,7 @@ somekey, anotherkey = await redis().get("somekey").get("anotherkey")
 
 Most normal [Redis commands](https://redis.io/commands) are available this way and they can either be called in such sequence, or if more convenient:
 
-```
+```python
 db = redis()
 db.get("bar")
 db.set("bar", "value").expire("bar", 0.5)  # Automatically deleted after 500 ms
