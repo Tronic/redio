@@ -1,6 +1,6 @@
 # RedIO - Redis for Trio
 
-A Python module for using Redis database in async programs based on the Trio library.
+A Python 3.7+ module for using Redis database in async programs based on the Trio library.
 
 ```
 pip install git+https://github.com/Tronic/redio.git
@@ -10,32 +10,38 @@ This module is not ready for production use and all APIs are still likely to cha
 
 ## Normal mode (high level API)
 
+A simple program to get started:
+
 ```python
-import redio
+import redio, trio
 
 # Initialise a connection pool
 redis = redio.Redis("redis://localhost/")
+
+async def main():
+    some, another = await redis().get("somekey").get("anotherkey")
+    print("Got values:", some, another)
+
+trio.run(main)
 ```
 
-A simple syntax for pipelining multiple commands with high performance:
+Most normal [Redis commands](https://redis.io/commands) are available and they can either be called in such sequence like above, or if more convenient, using a variable:
 
 ```python
-somekey, anotherkey = await redis().get("somekey").get("anotherkey")
-```
-
-Most normal [Redis commands](https://redis.io/commands) are available this way and they can either be called in such sequence, or if more convenient:
-
-```python
-db = redis()
+db = redis()  # Get a DB object
 db.get("bar")
 db.set("bar", "value").expire("bar", 0.5)  # Automatically deleted after 500 ms
 db.get("bar")
 old_bar, expire, bar = await db
 ```
 
-### Hash keys
+All commands are queued and sent to server only on the next `await`, improving performance especially if the Redis server is not on localhost, as unnecessary server round-trips are eliminated and often everything fits in a single packet.
 
-Hash key API is based on dict and keyword arguments for fields:
+Responses are returned as a list in the same order as the commands, noting that commands such as `set` do not produce any output.
+
+### Hash keys (Pythonic API)
+
+Redis keys may contain dictionaries with field names and values. Redio `hset` allows specifying fields by keyword arguments:
 
 ```python
 await redis().hset(
@@ -46,8 +52,7 @@ await redis().hset(
 )
 ```
 
-Instead of keyword arguments, a `dict` may also be passed. Similarly, values
-returned by hgetall come as a dictionary:
+Instead of keyword arguments, a `dict` may be used. Similarly, values returned by `hgetall` come as a dictionary:
 
 ```python
 >>> await redis().hgetall("hashkey").autodecode
@@ -58,30 +63,33 @@ returned by hgetall come as a dictionary:
 }
 ```
 
-### Transactions (WATCH/MULTI/EXEC)
+### Transactions
+
+A MULTI/EXEC transaction allows atomic execution without other clients running any commands in between. The following increments keys foo and bar atomically and returns their new values:
+
+```python
+>>> await redis().multi().incr("foo").incr("bar").exec()
+[1, 1]
+```
+
+Note: Redis cannot abort and undo an ongoing transaction once it has started. The server will attempt to execute all of the commands, even after errors.
+
+One or more WATCH commands may be used prior to transaction to implement optimistic locking using *check-and-set* where the transaction is discarded if any of the watched keys were modified. Usually the operation is attempted again until successful:
 
 ```python
 db = redis()
 
-# Start watching and then get the old value
-foo = await db.watch("foo").get("foo") or b"default VALUE"
-
-# The transaction (e.g. invert capitalization of foo)
-db.multi()
-db.set("foo", foo.swapcase())
-
-# Someone else (think another program) touches the watched key
-if maybe:
-    await redis().set("foo", b"ANOTHER value")
-
-result = await db.exec()
+# Inverts the capitalization of foo (sets "DEFAULT value" if foo does not exist)
+while True:
+    db.watch("foo")
+    foo = await db.get("foo") or b"default VALUE"
+    db.multi()
+    db.set("foo", foo.swapcase())
+    if await db.exec():
+        break
 ```
 
-If any of the watched keys are touched prior to execution, none of the commands after `multi` are run and the result is `False`.
-
-Otherwise all of the commands are run in sequence with no intervening commands from other users. `True` or a list of commands' responses is returned (depending on whether there was any output, in this example there was not, thus a boolean is always returned).
-
-Note: Redis cannot abort and undo an ongoing transaction once it has started. The server will attempt to execute all of the commands, even after errors.
+`False` is returned by `exec` if the transaction was discarded. Otherwise a list of responses or `True` is returned. In this example a boolean is always returned because the only command within the transaction was `set` which does not produce any output.
 
 ## Pub/Sub channels
 
