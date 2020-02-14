@@ -39,9 +39,9 @@ All commands are queued and sent to server only on the next `await`, improving p
 
 Responses are returned as a list in the same order as the commands, noting that commands such as `set` do not produce any output.
 
-### Hash keys (Pythonic API)
+### Hash keys
 
-Redis keys may contain dictionaries with field names and values. Redio `hset` allows specifying fields by keyword arguments:
+Redis keys may contain dictionaries with field names and values. RedIO `hset` allows specifying fields by **keyword arguments**:
 
 ```python
 await redis().hset(
