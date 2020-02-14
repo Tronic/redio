@@ -124,9 +124,8 @@ def _handle_response(handlers, res):
         if isinstance(h, list):
             # EXEC command (transaction result)
             if r:
-                ret.append(_handle_response(h, r))
-            else:
-                ret.append(bool(h is not False))  # True if it was []
+                r = _handle_response(h, r)
+            ret.append(r or r is not False)  # list, True or False
             continue
         if isinstance(h, Exception):
             raise h
