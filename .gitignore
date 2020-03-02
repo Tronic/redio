@@ -1,3 +1,8 @@
 __pycache__
 /redio.egg-info
-.vscode
+.vs*
+test-report.html
+.coverage
+htmlcov/
+.tox
+build/
