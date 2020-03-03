@@ -9,7 +9,7 @@ setup(
     description="Redis Trio client",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/Tronic/python-redio",
+    url="https://github.com/Tronic/redio",
     packages=find_packages(),
     classifiers = [
         "Programming Language :: Python :: 3",
