@@ -3,14 +3,12 @@
 A Python 3.7+ module for using Redis database in async programs based on the Trio library.
 
 ```
-pip install git+https://github.com/Tronic/redio.git
+pip install redio
 ```
 
 This module is not ready for production use and all APIs are still likely to change. It works with my applications and performs roughly at the same speed as other Redis modules for Python.
 
 ## Normal mode (high level API)
-
-A simple program to get started:
 
 ```python
 import redio, trio
