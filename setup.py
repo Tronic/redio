@@ -3,13 +3,14 @@ from redio import __version__
 
 setup(
     name="redio",
-    version=__version__,
     author="L. Kärkkäinen",
     author_email="tronic@noreply.users.github.com",
     description="Redis async client for Trio",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/Tronic/redio",
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
     packages=find_packages(),
     keywords=[
         "Redis", "key-value store", "trio", "async", "database", "networking"
