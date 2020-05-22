@@ -25,7 +25,7 @@ class Redis:
 
     def pubsub(self, *channels) -> PubSub:
         """Create a publish/subscribe receiver."""
-        return PubSub(self, *channels)
+        return PubSub(self._borrow_connection(), *channels)
 
     def _borrow_connection(self) -> Protocol:
         return self.pool.pop() if self.pool else Protocol(self.conninfo)
