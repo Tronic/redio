@@ -22,7 +22,6 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Topic :: System :: Networking",
-        "Framework :: Redis",
         "Framework :: Trio",
         "License :: OSI Approved :: MIT License",
         "License :: Public Domain",
