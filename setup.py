@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-from redio import __version__
 
 setup(
     name="redio",
