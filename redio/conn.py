@@ -23,7 +23,7 @@ class ConnectInfo:
         if url.username or url.params or url.fragment:
             raise ValueError(f"URL {url} contains unsupported elements")
         schemes = set(url.scheme.split("+")) if url.scheme else set()
-        if not schemes <= {"redis", "unix", "tls"}:
+        if not schemes <= {"redis", "rediss", "unix", "tls"}:
             raise ValueError(f"Unsupported scheme {url.scheme}")
         # Socket type
         if "unix" in schemes or "redis-socket" in schemes:
