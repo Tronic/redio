@@ -70,7 +70,16 @@ class Protocol:
             if self.inbuf:
                 raise ProtocolError(
                     f"Pipelining error: previous bytes unread: {self.inbuf[:10000]}")
-            if self.sock.socket.is_readable():
+            
+            if hasattr(self.sock, "transport_stream"):
+                # If the socket stream is wrapped with an SSL stream,
+                # the former one can be retrieved as `transport_stream`
+                # argument, see:
+                # https://github.com/python-trio/trio/blob/master/trio/_ssl.py
+                raw_socket = self.sock.transport_stream.socket
+            else:
+                raw_socket = self.sock.socket
+            if raw_socket.is_readable():
                 raise ProtocolError(
                     f"Pipelining error: server sent unexpected data"
                 )
